@@ -64,9 +64,9 @@ function buildWorld() {
   const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 900);
   G.camera = camera;
 
-  const hemi = new THREE.HemisphereLight(0xbfd8ff, 0x8a7a5a, 0.9);
+  const hemi = new THREE.HemisphereLight(0xbfd8ff, 0x8a7a5a, 1.05);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffe8b8, 2.1);
+  const sun = new THREE.DirectionalLight(0xffe8b8, 2.2);
   sun.position.set(120, 180, 60);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -103,8 +103,8 @@ function buildWorld() {
     car.mesh.userData.carRef = car;
     G.cars.push(car);
   }
-  // the mission car: red Veloce GT at the showroom lot
-  const mc = spawnCar(scene, 'sport', 0xd83a2e, 0, 52, Math.PI / 2, { parked: true });
+  // the mission car: red Veloce GT parked on the showroom lot's street (road x=26)
+  const mc = spawnCar(scene, 'sport', 0xd83a2e, 29, 52, 0, { parked: true });
   mc.missionCar = true;
   mc.mesh.userData.carRef = mc;
   G.cars.push(mc);
@@ -235,7 +235,10 @@ function bindInput() {
   const keymap = { KeyW: 'fwd', ArrowUp: 'fwd', KeyS: 'back', ArrowDown: 'back', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', ShiftLeft: 'shift', ShiftRight: 'shift' };
   addEventListener('keydown', (e) => {
     if (keymap[e.code] !== undefined) { G.input[keymap[e.code]] = true; e.preventDefault(); }
-    if (e.code === 'KeyE' && G.state === 'play') tryEnterCar();
+    if (e.code === 'KeyE' && G.state === 'play') {
+      if (!G.player.car) G.player.pickupTap = true; // E also grabs a package
+      tryEnterCar();
+    }
     if (e.code === 'KeyF' && G.state === 'play') punch(G);
     if (e.code === 'KeyM') { const m = G.audio.toggleMute(); showToast(m ? 'Sound muted' : 'Sound on', 1000); }
     if (e.code === 'KeyR' && G.state === 'play' && G.missionIndex < 0) { startMission(G, 0); showToast('Story restarted.', 1500); }
@@ -370,11 +373,13 @@ function step(dt) {
   updatePolice(G, dt);
   updateWanted(G, dt);
   updateMissions(G, dt);
-  // traffic cars bumping the player on foot
+  // traffic cars bumping the player on foot (rate-limited)
   if (!p.car) {
+    p.bumpCd = Math.max(0, (p.bumpCd || 0) - dt);
     for (const c of G.cars) {
       if (c.isPolice) continue;
-      if (Math.hypot(c.x - p.x, c.z - p.z) < 2.0 && Math.abs(c.speed) > 4) {
+      if (Math.hypot(c.x - p.x, c.z - p.z) < 2.0 && Math.abs(c.speed) > 4 && p.bumpCd <= 0) {
+        p.bumpCd = 1.0;
         p.health = Math.max(0, p.health - 12);
         p.lastHurt = G.time;
         G.audio.thud();
@@ -382,6 +387,11 @@ function step(dt) {
         if (p.health <= 0) G.wasted = true;
       }
     }
+  }
+  // during a screenshot warmup the player cannot be wasted or busted
+  if (G.shot && G.shot.warmup > 0) {
+    if (p.health < 40) p.health = 40;
+    G.busted = false; G.wasted = false;
   }
   // audio
   const speed01 = p.car ? Math.abs(p.car.speed) / p.car.maxSpeed : 0;

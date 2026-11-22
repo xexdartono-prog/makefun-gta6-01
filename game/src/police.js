@@ -112,11 +112,15 @@ export function updatePolice(G, dt) {
       bar.children[0].material.emissiveIntensity = Math.sin(c.flash) > 0 ? 2.2 : 0.15;
       bar.children[1].material.emissiveIntensity = Math.sin(c.flash) > 0 ? 0.15 : 2.2;
     }
-    // ramming the player's car hurts
+    // ramming the player's car hurts (rate-limited so a glued-on unit can't insta-kill)
     if (p.car && carHitCar(c, p.car)) {
-      G.player.health = Math.max(0, G.player.health - 4);
-      G.audio.thud();
-      if (G.player.health <= 0) G.wasted = true;
+      c.ramCd = (c.ramCd || 0) - dt;
+      if (c.ramCd <= 0) {
+        c.ramCd = 0.8;
+        G.player.health = Math.max(0, G.player.health - 4);
+        G.audio.thud();
+        if (G.player.health <= 0) G.wasted = true;
+      }
     }
   }
   // foot cops chase and try to bust the player

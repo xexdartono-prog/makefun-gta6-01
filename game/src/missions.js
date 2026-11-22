@@ -8,8 +8,8 @@ export const MISSIONS = [
     brief: 'Mara needs a package from the docks. Go get it — and don\'t keep her waiting.',
     steps: [
       { text: 'Drive to the container yard at the docks', target: { x: 104, z: 156 }, radius: 5 },
-      { text: 'Pick up the package', target: { x: 104, z: 156 }, radius: 4 },
-      { text: 'Deliver the package to The Palms Club', target: { x: -52, z: -52 }, radius: 5 },
+      { text: 'Press E to pick up the package', target: { x: 104, z: 156 }, radius: 4, pickup: true },
+      { text: 'Deliver the package to The Palms Club', target: { x: -26, z: -52 }, radius: 5 },
     ],
     reward: 500,
   },
@@ -17,8 +17,8 @@ export const MISSIONS = [
     id: 'hotwheels', name: 'HOT WHEELS', giver: 'Mara Voss',
     brief: 'A red Veloce GT is sitting in the showroom lot. Steal it. The cops will notice.',
     steps: [
-      { text: 'Steal the red Veloce GT from the showroom lot', target: { x: 0, z: 52 }, radius: 6, steal: true },
-      { text: 'Deliver the Veloce to the chop shop', target: { x: -190, z: -190 }, radius: 6 },
+      { text: 'Steal the red Veloce GT from the showroom lot', target: { x: 29, z: 52 }, radius: 6, steal: true },
+      { text: 'Deliver the Veloce to the chop shop', target: { x: -182, z: -190 }, radius: 6 },
     ],
     reward: 1200,
   },
@@ -115,6 +115,8 @@ export function updateMissions(G, dt) {
   const d = Math.hypot(p.x - step.target.x, p.z - step.target.z);
   let done = d < step.radius;
   if (step.steal) done = done && p.car && p.car.missionCar === true;
+  if (step.pickup) done = done && p.pickupTap === true;
+  p.pickupTap = false;
   if (!done) return;
   G.missionStep += 1;
   G.audio.pickup();

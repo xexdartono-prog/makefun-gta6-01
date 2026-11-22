@@ -26,7 +26,7 @@ function groundTexture(rng) {
     }
   }
   // roads
-  g.fillStyle = '#2e3138';
+  g.fillStyle = '#3a3e45';
   for (const L of lines) {
     g.fillRect(0, Z(L - WORLD.roadHalf), 2048, WORLD.roadHalf * 2 * S);
     g.fillRect(X(L - WORLD.roadHalf), 0, WORLD.roadHalf * 2 * S, Z(WORLD.beachZ));
@@ -60,11 +60,11 @@ function windowTexture(litRatio, rng) {
   const cv = document.createElement('canvas');
   cv.width = 128; cv.height = 256;
   const g = cv.getContext('2d');
-  g.fillStyle = '#22242a'; g.fillRect(0, 0, 128, 256);
+  g.fillStyle = '#aab0b8'; g.fillRect(0, 0, 128, 256);
   for (let y = 8; y < 248; y += 16) {
     for (let x = 8; x < 120; x += 16) {
       const lit = rng() < litRatio;
-      g.fillStyle = lit ? (rng() < 0.5 ? '#ffd88a' : '#bfe0ff') : '#3a4a5a';
+      g.fillStyle = lit ? (rng() < 0.5 ? '#ffd88a' : '#bfe0ff') : '#2e3d4d';
       g.fillRect(x, y, 10, 11);
     }
   }
