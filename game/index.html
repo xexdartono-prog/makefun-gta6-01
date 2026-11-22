@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLMARINA — Open World Crime</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0b1020;font-family:'Segoe UI',Arial,sans-serif}
+  #game{position:fixed;inset:0;display:block}
+  .hud{position:fixed;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);user-select:none;pointer-events:none;z-index:5}
+  #cash{top:14px;left:16px;font-size:26px;font-weight:800;color:#7dff9e}
+  #cash small{font-size:13px;color:#cfe8d4;font-weight:600}
+  #health{top:48px;left:16px;width:200px}
+  #health .bar{height:10px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.5);border-radius:5px;overflow:hidden}
+  #health .fill{height:100%;width:100%;background:linear-gradient(90deg,#ff5a5a,#ff9a3d)}
+  #health span{font-size:11px;letter-spacing:1px;opacity:.9}
+  #wanted{top:14px;right:16px;font-size:30px;letter-spacing:4px;color:#ffd23d}
+  #wanted .dim{color:rgba(255,255,255,.25)}
+  #speed{bottom:16px;right:18px;font-size:34px;font-weight:800;text-align:right}
+  #speed small{display:block;font-size:11px;letter-spacing:2px;opacity:.8}
+  #objective{top:14px;left:50%;transform:translateX(-50%);text-align:center;max-width:520px}
+  #objective .tag{display:inline-block;background:#ffcf3d;color:#222;font-weight:800;font-size:12px;letter-spacing:2px;padding:3px 10px;border-radius:3px}
+  #objective .txt{margin-top:6px;font-size:16px;font-weight:700;background:rgba(0,0,0,.45);padding:5px 12px;border-radius:4px}
+  #objective .dist{font-size:13px;opacity:.9}
+  #minimap{position:fixed;left:16px;bottom:16px;border:2px solid rgba(255,255,255,.65);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.5);z-index:5}
+  #hint{bottom:16px;left:216px;font-size:12px;opacity:.85;line-height:1.5}
+  #toast{top:32%;left:50%;transform:translate(-50%,-50%);text-align:center;font-size:44px;font-weight:900;letter-spacing:3px;display:none}
+  #toast small{display:block;font-size:18px;letter-spacing:1px;margin-top:8px}
+  #crosshair{top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;display:none}
+  .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;background:radial-gradient(ellipse at 50% 30%,rgba(255,150,60,.25),rgba(5,8,20,.88) 70%);color:#fff;text-align:center}
+  .overlay h1{font-size:64px;margin:0;letter-spacing:8px;color:#ffd23d;text-shadow:0 4px 0 #c33,0 8px 24px rgba(0,0,0,.6)}
+  .overlay h2{font-size:18px;font-weight:400;letter-spacing:4px;opacity:.85;margin:6px 0 18px}
+  .overlay p{max-width:560px;line-height:1.6;font-size:15px;opacity:.92}
+  .overlay .ctrls{font-size:13px;line-height:1.9;background:rgba(0,0,0,.4);padding:12px 22px;border-radius:8px;margin:10px 0 20px}
+  .btn{pointer-events:auto;cursor:pointer;background:#ffd23d;color:#1a1a1a;border:0;font-size:18px;font-weight:800;letter-spacing:1px;padding:13px 34px;border-radius:6px;margin:6px}
+  .btn:hover{background:#ffe27a}
+  .btn.ghost{background:transparent;color:#fff;border:2px solid #fff}
+  #menu{display:flex}
+  #pause,#over{display:none}
+  #over h1{color:#ff5a5a}
+  #loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#0b1020;z-index:20;font-size:18px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="loader">LOADING SOLMARINA…</div>
+<div class="hud" id="cash">$0<br><small id="cashsub">SOLMARINA</small></div>
+<div class="hud" id="health"><span>HEALTH</span><div class="bar"><div class="fill" id="healthfill"></div></div></div>
+<div class="hud" id="wanted"></div>
+<div class="hud" id="objective"><span class="tag" id="objtag">FREE ROAM</span><div class="txt" id="objtxt">Explore Solmarina. Steal a car with E.</div><div class="dist" id="objdist"></div></div>
+<div class="hud" id="speed">0<small>MPH</small></div>
+<canvas id="minimap" width="180" height="180"></canvas>
+<div class="hud" id="hint">WASD move &nbsp;·&nbsp; SHIFT run &nbsp;·&nbsp; E enter/exit car &nbsp;·&nbsp; F punch &nbsp;·&nbsp; CLICK shoot<br>SPACE handbrake &nbsp;·&nbsp; M mute &nbsp;·&nbsp; P pause &nbsp;·&nbsp; drag mouse to look</div>
+<div class="hud" id="toast"></div>
+<div class="hud" id="crosshair">✛</div>
+
+<div class="overlay" id="menu">
+  <h1>SOLMARINA</h1>
+  <h2>AN OPEN-WORLD CRIME STORY</h2>
+  <p>You are <b>Dario Cruz</b>, a wheelman fresh out of the Solmarina docks. Mara Voss runs
+  the crew now — and she has jobs for you. Steal cars, outrun the Solmarina PD, and work
+  your way from courier to legend of the coast.</p>
+  <div class="ctrls">WASD — walk / drive &nbsp;·&nbsp; SHIFT — run &nbsp;·&nbsp; E — enter / steal car &nbsp;·&nbsp; F — punch<br>
+  MOUSE CLICK — shoot &nbsp;·&nbsp; SPACE — handbrake &nbsp;·&nbsp; drag mouse — camera &nbsp;·&nbsp; P — pause</div>
+  <div>
+    <button class="btn" id="btn-start">▶ &nbsp;NEW GAME</button>
+    <button class="btn ghost" id="btn-continue">CONTINUE</button>
+  </div>
+  <p style="font-size:12px;opacity:.6">A fully original game. No real city, person or brand. Best played in desktop Chrome.</p>
+</div>
+
+<div class="overlay" id="pause">
+  <h1 style="font-size:44px">PAUSED</h1>
+  <p id="pause-info"></p>
+  <div>
+    <button class="btn" id="btn-resume">RESUME</button>
+    <button class="btn ghost" id="btn-restart-mission">RESTART MISSION</button>
+    <button class="btn ghost" id="btn-save">SAVE GAME</button>
+    <button class="btn ghost" id="btn-quit">QUIT TO MENU</button>
+  </div>
+</div>
+
+<div class="overlay" id="over">
+  <h1 id="over-title">WASTED</h1>
+  <p id="over-text"></p>
+  <div><button class="btn" id="btn-retry">RESPAWN — $100 FEE</button></div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
